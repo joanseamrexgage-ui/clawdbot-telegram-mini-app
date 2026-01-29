@@ -1,0 +1,25 @@
+{
+  "name": "clawdbot-telegram-mini-app",
+  "version": "1.0.0",
+  "description": "Telegram Mini App for Clawdbot Management",
+  "main": "api/server.js",
+  "scripts": {
+    "start": "node api/server.js",
+    "dev": "nodemon api/server.js"
+  },
+  "dependencies": {
+    "express": "^4.22.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "telegram",
+    "mini-app",
+    "clawdbot",
+    "ai",
+    "agent"
+  ],
+  "author": "Dao",
+  "license": "ISC"
+}

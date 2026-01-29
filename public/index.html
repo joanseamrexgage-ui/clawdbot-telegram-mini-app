@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clawdbot Manager</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            border-radius: 25px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        
+        .tab.active {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .agent-card, .file-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            margin-bottom: 10px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+        
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .btn-primary {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .btn-success {
+            background: rgba(76, 175, 80, 0.3);
+        }
+        
+        .btn-danger {
+            background: rgba(244, 67, 54, 0.3);
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group input, .input-group textarea {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.2);
+            color: white;
+            margin-bottom: 10px;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-active {
+            background: #4CAF50;
+            box-shadow: 0 0 10px #4CAF50;
+        }
+        
+        .status-idle {
+            background: #FFC107;
+        }
+        
+        .status-offline {
+            background: #F44336;
+        }
+        
+        .file-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            margin-bottom: 5px;
+        }
+        
+        .file-icon {
+            margin-right: 10px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Clawdbot Manager</h1>
+            <p>Control your AI agents and files</p>
+        </div>
+        
+        <div class="nav-tabs">
+            <button class="tab active" onclick="switchTab('dashboard')">Dashboard</button>
+            <button class="tab" onclick="switchTab('agents')">Agents</button>
+            <button class="tab" onclick="switchTab('files')">Files</button>
+            <button class="tab" onclick="switchTab('new-agent')">New Agent</button>
+        </div>
+        
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <div class="card">
+                <h3>📊 System Status</h3>
+                <div id="system-status">Loading...</div>
+            </div>
+            <div class="card">
+                <h3>⚡ Quick Actions</h3>
+                <button class="btn btn-primary" onclick="refreshData()">🔄 Refresh</button>
+                <button class="btn btn-success" onclick="switchTab('new-agent')">➕ New Agent</button>
+                <button class="btn btn-primary" onclick="switchTab('files')">📁 Browse Files</button>
+            </div>
+        </div>
+        
+        <!-- Agents Tab -->
+        <div id="agents" class="tab-content">
+            <div class="card">
+                <h3>🤖 Active Agents</h3>
+                <div id="agents-list">Loading...</div>
+            </div>
+        </div>
+        
+        <!-- Files Tab -->
+        <div id="files" class="tab-content">
+            <div class="card">
+                <h3>📁 File Browser</h3>
+                <div class="input-group">
+                    <input type="text" id="file-path" placeholder="Enter path (e.g., /home/duckbuddha/clawd)" value="/home/duckbuddha/clawd">
+                    <button class="btn btn-primary" onclick="browseFiles()">📁 Browse</button>
+                </div>
+                <div id="file-browser">Loading files...</div>
+            </div>
+        </div>
+        
+        <!-- New Agent Tab -->
+        <div id="new-agent" class="tab-content">
+            <div class="card">
+                <h3>➕ Create New Agent</h3>
+                <div class="input-group">
+                    <input type="text" id="agent-role" placeholder="Agent Role (e.g., physics professor)">
+                </div>
+                <div class="input-group">
+                    <textarea id="agent-task" placeholder="Task for the agent..." rows="4"></textarea>
+                </div>
+                <button class="btn btn-success" onclick="createAgent()">🚀 Create Agent</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Telegram Web App integration
+        const tg = window.Telegram.WebApp;
+        
+        // Expand the web app to full size
+        tg.expand();
+        
+        // Set theme based on Telegram
+        document.body.style.backgroundColor = tg.backgroundColor;
+        
+        // Initialize the app
+        function initApp() {
+            refreshData();
+            setInterval(refreshData, 30000); // Refresh every 30 seconds
+        }
+        
+        // Tab switching
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Activate selected tab button
+            event.target.classList.add('active');
+            
+            // Load content based on tab
+            if (tabName === 'agents') {
+                loadAgents();
+            } else if (tabName === 'files') {
+                browseFiles();
+            } else if (tabName === 'dashboard') {
+                refreshData();
+            }
+        }
+        
+        // Refresh all data
+        async function refreshData() {
+            await loadSystemStatus();
+            await loadAgents();
+        }
+        
+        // Load system status
+        async function loadSystemStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const status = await response.json();
+                
+                document.getElementById('system-status').innerHTML = `
+                    <div class="card">
+                        <strong>System:</strong> Online<br>
+                        <strong>Active Agents:</strong> ${status.activeAgents}<br>
+                        <strong>Uptime:</strong> ${status.uptime} min<br>
+                        <strong>Memory:</strong> ${status.memoryUsed} / ${status.memoryTotal} GB
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('system-status').innerHTML = 
+                    '<div class="card">Error loading status</div>';
+            }
+        }
+        
+        // Load agents
+        async function loadAgents() {
+            try {
+                const response = await fetch('/api/agents');
+                const agents = await response.json();
+                
+                let html = '';
+                if (agents.length === 0) {
+                    html = '<div class="card">No active agents</div>';
+                } else {
+                    agents.forEach(agent => {
+                        html += `
+                            <div class="agent-card">
+                                <div>
+                                    <span class="status-indicator status-${agent.status}"></span>
+                                    <strong>${agent.id}</strong><br>
+                                    <small>${agent.role || 'Unknown role'}</small>
+                                </div>
+                                <div>
+                                    <button class="btn btn-danger" onclick="stopAgent('${agent.id}')">Stop</button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                
+                document.getElementById('agents-list').innerHTML = html;
+            } catch (error) {
+                document.getElementById('agents-list').innerHTML = 
+                    '<div class="card">Error loading agents</div>';
+            }
+        }
+        
+        // Browse files
+        async function browseFiles() {
+            const path = document.getElementById('file-path').value || '/';
+            try {
+                const response = await fetch(`/api/files?path=${encodeURIComponent(path)}`);
+                const files = await response.json();
+                
+                let html = '<div class="file-list">';
+                if (files.error) {
+                    html += `<div class="card">Error: ${files.error}</div>`;
+                } else if (files.items.length === 0) {
+                    html += '<div class="card">Directory is empty</div>';
+                } else {
+                    files.items.forEach(file => {
+                        const icon = file.type === 'directory' ? '📁' : '📄';
+                        const action = file.type === 'directory' ? 
+                            `onclick="changePath('${file.path}')"` : 
+                            `onclick="downloadFile('${file.path}', '${file.name}')"`;
+                        
+                        html += `
+                            <div class="file-item" ${action}>
+                                <div>
+                                    ${icon} <strong>${file.name}</strong>
+                                </div>
+                                <div>
+                                    <small>${file.size ? formatFileSize(file.size) : ''}</small>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                html += '</div>';
+                
+                document.getElementById('file-browser').innerHTML = html;
+            } catch (error) {
+                document.getElementById('file-browser').innerHTML = 
+                    '<div class="card">Error loading files</div>';
+            }
+        }
+        
+        // Change directory path
+        function changePath(path) {
+            document.getElementById('file-path').value = path;
+            browseFiles();
+        }
+        
+        // Create new agent
+        async function createAgent() {
+            const role = document.getElementById('agent-role').value;
+            const task = document.getElementById('agent-task').value;
+            
+            if (!role || !task) {
+                alert('Please enter both role and task');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/agents', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ role, task })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Agent created successfully!');
+                    document.getElementById('agent-role').value = '';
+                    document.getElementById('agent-task').value = '';
+                    loadAgents();
+                    switchTab('agents');
+                } else {
+                    alert('Error creating agent: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error creating agent: ' + error.message);
+            }
+        }
+        
+        // Stop agent
+        async function stopAgent(agentId) {
+            if (confirm('Are you sure you want to stop this agent?')) {
+                try {
+                    const response = await fetch(`/api/agents/${agentId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        alert('Agent stopped successfully!');
+                        loadAgents();
+                    } else {
+                        alert('Error stopping agent: ' + result.error);
+                    }
+                } catch (error) {
+                    alert('Error stopping agent: ' + error.message);
+                }
+            }
+        }
+        
+        // Download file
+        function downloadFile(path, filename) {
+            // In a real implementation, this would trigger a file download
+            alert(`Download would start for: ${filename}\\nPath: ${path}`);
+        }
+        
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        // Initialize app when loaded
+        window.addEventListener('load', initApp);
+    </script>
+</body>
+</html>
